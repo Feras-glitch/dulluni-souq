@@ -26,8 +26,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  /* فتح الصفحة: من الذاكرة دائمًا (الملف كله صفحة واحدة) */
-  if (req.mode === 'navigate') {
+  /* فتح الكتاب نفسه (الجذر أو index.html): من الذاكرة دائمًا. أما فتح ملف آخر مباشرة
+   * (مثل manifest.json أو أيقونة) فيُعامَل كأي ملف، فلا يُستبدل بالكتاب */
+  const path = new URL(req.url).pathname;
+  const scopePath = new URL(self.registration.scope).pathname;
+  if (req.mode === 'navigate' && (path === scopePath || path === scopePath + 'index.html')) {
     event.respondWith(
       caches.open(CACHE).then(c => c.match('index.html')).then(r => r || fetch(req))
     );

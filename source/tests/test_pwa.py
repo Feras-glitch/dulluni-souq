@@ -13,7 +13,7 @@ with sync_playwright() as pw:
     ctx = br.new_context(accept_downloads=True); ctx.grant_permissions(['microphone'])
     pg = ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
-    pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
+    pg.on('console', lambda m: errs.append(m.text + ' @ ' + str(m.location)) if m.type == 'error' else None)
     pg.goto(URL); pg.wait_for_selector('.profiles')
     pg.wait_for_function('navigator.serviceWorker.ready.then(()=>true)', timeout=15000)
     pg.reload(); pg.wait_for_selector('.profiles')
@@ -40,7 +40,12 @@ with sync_playwright() as pw:
     pg.click('.btn-stop'); pg.wait_for_selector('.my-rec audio', timeout=8000)
     check('records while offline', pg.evaluate('!!S.recs.p1'))
     pg.goto(URL + 'index.html?x=1'); pg.wait_for_selector('.profile-btn')
-    check('deep/navigation request served offline', True)
+    check('index.html navigation served offline', True)
+    n_before = len(errs)
+    pg.goto(URL + 'manifest.json')   # المتصفح يطلب favicon من جذر النطاق خارج النطاق وهو غير متصل؛ خطأ متوقع
+    check('direct navigation to manifest.json is not replaced by the book', '"short_name"' in pg.content())
+    del errs[n_before:]
+    pg.goto(URL); pg.wait_for_selector('.profile-btn')
     # export from PWA
     pg.click('#topbar .btn >> nth=0') if pg.locator('#topbar .btn').count() else None
     pg.wait_for_selector('.profile-row')
@@ -49,6 +54,7 @@ with sync_playwright() as pw:
     html = out.read_text('utf-8')
     check('export strips PWA links', '<link rel="manifest"' not in html and 'apple-touch-icon' not in html and 'id="export-data"' in html)
     check('export shows iPhone notice toast', 'سَفَارِي' in pg.inner_text('#toast'))
+    errs[:] = [e for e in errs if '/favicon.ico' not in e]  # طلب المتصفح لأيقونة جذر النطاق، خارج نطاق الكتاب
     check('no console errors (pwa)', not errs, errs)
     ctx.close()
     c2 = br.new_context(); p2 = c2.new_page(); e2 = []
