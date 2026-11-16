@@ -1,0 +1,7 @@
+source/dist/
+apps/android/node_modules/
+apps/android/android/
+apps/android/www/
+apps/windows/node_modules/
+apps/windows/dist/
+apps/windows/app/

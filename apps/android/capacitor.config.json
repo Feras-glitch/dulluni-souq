@@ -1,0 +1,10 @@
+{
+  "appId": "io.github.ferasglitch.dulluni",
+  "appName": "دلوني على السوق",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#FBF7EE",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}

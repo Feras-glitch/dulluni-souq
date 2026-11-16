@@ -886,6 +886,12 @@ const ILLUSTRATIONS = {
 /* نسخة نظيفة من الملف قبل أي تعديل على DOM — تُستعمل في التصدير */
 const PRISTINE_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
+/* المنصة: تطبيق أندرويد (Capacitor) أو تطبيق ويندوز (Electron) أو متصفح */
+const CAP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const CAP_PLUGINS = CAP ? (window.Capacitor.Plugins || {}) : {};
+const ELECTRON = /\bElectron\//.test(navigator.userAgent);
+const NATIVE = CAP || ELECTRON;
+
 /* ---------- نصوص الواجهة: نص واحد أو [مذكر، مؤنث] ---------- */
 const UI = {
   appTitle: 'دُلُّونِي عَلَى السُّوقِ',
@@ -1160,7 +1166,9 @@ function freshProgress() {
  * ===================================================================== */
 const TTS = {
   token: 0, active: false,
-  supported: () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window,
+  /* في أندرويد: محرك النطق الأصلي، لأن متصفح التطبيقات المضمَّن لا يدعم القراءة الآلية */
+  plugin: () => CAP_PLUGINS.TextToSpeech || null,
+  supported() { return CAP ? !!this.plugin() : ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window); },
   async voice() {
     let vs = speechSynthesis.getVoices();
     if (!vs.length) {
@@ -1174,7 +1182,8 @@ const TTS = {
   },
   stop() {
     this.token++; this.active = false;
-    if (this.supported()) speechSynthesis.cancel();
+    if (CAP) { const pl = this.plugin(); if (pl) pl.stop().catch(() => {}); }
+    else if (this.supported()) speechSynthesis.cancel();
     document.querySelectorAll('.speaking').forEach(e => e.classList.remove('speaking'));
     document.querySelectorAll('[data-tts-btn]').forEach(b => { b.textContent = T(u('listen')); });
   },
@@ -1185,6 +1194,24 @@ const TTS = {
     this.stop();
     const my = ++this.token; this.active = true;
     if (btn) btn.textContent = T(UI.stopListen);
+    const highlight = it => {
+      document.querySelectorAll('.speaking').forEach(e => e.classList.remove('speaking'));
+      const el = it.sel && document.querySelector(it.sel);
+      if (el) { el.classList.add('speaking'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    };
+    if (CAP) {
+      const pl = this.plugin();
+      for (const it of items) {
+        if (my !== this.token) return;
+        highlight(it);
+        let failed = false;
+        await pl.speak({ text: speechText(it.text), lang: 'ar-SA', rate: 0.9, pitch: 1.0, volume: 1.0, category: 'playback' })
+          .catch(() => { failed = true; });
+        if (failed && my === this.token) { if (!S.warnedVoice) { S.warnedVoice = true; toast(UI.noArVoice, 'error'); } break; }
+      }
+      if (my === this.token) this.stop();
+      return;
+    }
     const voice = await this.voice();
     if (my !== this.token) return;
     if (!voice && !S.warnedVoice) { S.warnedVoice = true; toast(UI.noArVoice); }
@@ -1195,11 +1222,7 @@ const TTS = {
         ut.lang = voice ? voice.lang : 'ar-SA';
         if (voice) ut.voice = voice;
         ut.rate = 0.85;
-        ut.onstart = () => {
-          document.querySelectorAll('.speaking').forEach(e => e.classList.remove('speaking'));
-          const el = it.sel && document.querySelector(it.sel);
-          if (el) { el.classList.add('speaking'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-        };
+        ut.onstart = () => highlight(it);
         ut.onend = res; ut.onerror = res;
         speechSynthesis.speak(ut);
       });
@@ -1572,7 +1595,7 @@ function viewProfiles() {
       h('div', { class: 'row' }, rb('m', UI.boy, true), rb('f', UI.girl, false)),
       h('button', { class: 'btn btn-primary', type: 'submit' }, UI.add));
     wrap.append(form);
-    if (S.persistent === false && S.profiles.length) wrap.append(h('p', { class: 'muted small parent-note' }, UI.notPersistent));
+    if (!NATIVE && S.persistent === false && S.profiles.length) wrap.append(h('p', { class: 'muted small parent-note' }, UI.notPersistent));
   }
   return wrap;
 }
@@ -1830,7 +1853,7 @@ function viewCert() {
         h('p', { class: 'cert-rec' }, u('certRecorded', { n: arNum(rec) })),
         h('h3', { class: 'small strong' }, UI.badgesTitle),
         list)),
-    h('div', { class: 'row no-print' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, UI.printCert)));
+    CAP ? null : h('div', { class: 'row no-print' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, UI.printCert)));
 }
 
 /* =====================================================================
@@ -1855,16 +1878,30 @@ async function doExport(p) {
     const marker = '<script id="app-' + 'main">';
     if (PRISTINE_HTML.indexOf(marker) < 0) throw new Error('marker');
     /* النسخة المصدَّرة ملف مستقل: تُنزع منها روابط تطبيق الويب حتى لا تطلب ملفات غير موجودة */
-    const base = PRISTINE_HTML.replace(new RegExp('<' + '!--pwa-->[\\s\\S]*?<' + '!--/pwa-->'), '<link rel="icon" href="data:,">');
+    let base = PRISTINE_HTML.replace(new RegExp('<' + '!--pwa-->[\\s\\S]*?<' + '!--/pwa-->'), '<link rel="icon" href="data:,">');
+    /* وتُنزع أي سكربتات حقنتها المنصة (مثل جسر تطبيق أندرويد) قبل سكربت الكتاب، فيبقى الملف نظيفًا */
+    const j0 = base.indexOf(marker);
+    base = base.slice(0, j0).replace(new RegExp('<script\\b[\\s\\S]*?<' + '/script>', 'gi'), '') + base.slice(j0);
     const j = base.indexOf(marker);
     const html = base.slice(0, j) + tag + base.slice(j);
+    const fname = 'دلوني-على-السوق-' + p.name.replace(/[\\/:*?"<>|\s]+/g, '-') + '.html';
+    if (CAP && CAP_PLUGINS.Filesystem && CAP_PLUGINS.Share) {
+      /* متصفح أندرويد المضمَّن لا يدعم تنزيل الملفات؛ يُكتب الملف ثم يُفتح خيار المشاركة والحفظ */
+      const w = await CAP_PLUGINS.Filesystem.writeFile({ path: fname, data: html, directory: 'CACHE', encoding: 'utf8' });
+      await CAP_PLUGINS.Share.share({ title: fname, files: [w.uri] });
+      toast(UI.exportDone, 'ok');
+      return;
+    }
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: 'دلوني-على-السوق-' + p.name.replace(/[\\/:*?"<>|\s]+/g, '-') + '.html' });
+    const a = h('a', { href: url, download: fname });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
     toast(UI.exportDone + ' ' + UI.iosNotice, 'ok', 10000);
-  } catch (e) { toast(UI.exportFail, 'error'); }
+  } catch (e) {
+    if (e && /cancel/i.test(String(e.message || e))) return;   /* أغلق المستخدم نافذة المشاركة */
+    toast(UI.exportFail, 'error');
+  }
 }
 function b64ToBlob(b64, mime) {
   const bin = atob(b64); const u8 = new Uint8Array(bin.length);
@@ -1922,7 +1959,7 @@ async function boot() {
 }
 /* عامل الخدمة: في نسخة التطبيق فقط، وعلى https أو localhost، ولا يُسجَّل في النسخة المصدَّرة */
 function registerSW() {
-  if (S.readonly || !('serviceWorker' in navigator) || !document.querySelector('link[rel="manifest"]')) return;
+  if (NATIVE || S.readonly || !('serviceWorker' in navigator) || !document.querySelector('link[rel="manifest"]')) return;
   const okOrigin = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (!okOrigin) return;
   navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => { /* الكتاب يعمل بدونه */ });
