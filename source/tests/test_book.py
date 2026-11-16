@@ -1,5 +1,7 @@
 import re, sys, json, threading, http.server, functools, pathlib, time
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent))
+from helpers import enter_parent, exit_parent, add_child_in_parent
 ROOT = pathlib.Path('/home/claude/build')
 DIST = ROOT / 'dist'
 SHOTS = ROOT / 'shots'
@@ -34,9 +36,12 @@ with sync_playwright() as pw:
     pg.wait_for_selector('.cover')
     check('XSS name rendered as text', pg.text_content('.who') == evil[:24] and pg.evaluate('!window.__xss && !document.querySelector("#app img")'))
     pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profiles')
-    pg.locator('.profile-row').first.locator('.btn-danger').click()
-    pg.wait_for_function('document.querySelectorAll(".profile-row").length===0')
-    check('profile deleted', pg.locator('.profile-row').count() == 0)
+    check('no export/delete on the child screen', pg.locator('.profiles .btn-danger').count() == 0 and pg.locator('.profiles >> text=تَصْدِيرُ').count() == 0)
+    enter_parent(pg)
+    pg.locator('.parent .profile-row').first.locator('.btn-danger').click()
+    pg.wait_for_function('document.querySelectorAll(".parent .profile-row").length===0')
+    check('profile deleted from parent mode', pg.locator('.profile-row').count() == 0)
+    exit_parent(pg)
 
     # main profile (girl)
     pg.fill('#new-name', 'دلال'); pg.check('input[value=f]'); pg.click('.add-form button[type=submit]')
@@ -148,7 +153,7 @@ with sync_playwright() as pw:
             orders = pg.evaluate('[...document.querySelectorAll(".tl-item")].map(e=>+e.dataset.order)')
             pos = orders.index(target)
             if pos == target - 1: break
-            pg.locator('.tl-item').nth(pos).locator('button').first.click()
+            pg.locator('.tl-item').nth(pos).locator('.tl-moves button').first.click()
     pg.click('.activity .btn-primary')
     check('timeline solved reveals dates', pg.locator('.tl-when').count() == 7 and pg.evaluate('badges().timeline'))
 
@@ -170,13 +175,15 @@ with sync_playwright() as pw:
 
     # profile isolation
     pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profiles')
-    pg.fill('#new-name', 'كريم'); pg.click('.add-form button[type=submit]'); pg.wait_for_selector('.cover')
+    enter_parent(pg); add_child_in_parent(pg, 'كريم'); exit_parent(pg)
+    pg.locator('.profile-btn', has_text='كريم').click(); pg.wait_for_selector('.cover')
     check('masculine UI for boy', 'ابْدَأِ' in pg.text_content('.cover .btn-primary'))
     check('profile isolation', pg.evaluate('Object.keys(S.recs).length===0 && S.progress.quiz.best===0 && !S.progress.timeline.solved'))
 
     # export Dalal
-    pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profile-row')
-    row = pg.locator('.profile-row', has_text='دلال')
+    pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profiles')
+    enter_parent(pg)
+    row = pg.locator('.parent .profile-row', has_text='دلال')
     with pg.expect_download() as dl: row.locator('text=تَصْدِيرُ').click()
     exp_path = ROOT / 'dist' / 'export-test.html'
     dl.value.save_as(str(exp_path))
@@ -219,7 +226,7 @@ with sync_playwright() as pw:
 
 # emoji whitelist on the built file
 html = (DIST / 'book.html').read_text('utf-8')
-ALLOWED = set('→➕🔊⏹🎙▶🗑✓📚⬇🏠⬅➡🌸⭐🏅🪙⚖⏳○▲▼−💎🌱🤝🎁❤🖨')
+ALLOWED = set('🔒⬆🔑→➕🔊⏹🎙▶🗑✓📚⬇🏠⬅➡🌸⭐🏅🪙⚖⏳○▲▼−💎🌱🤝🎁❤🖨')
 found = set(ch for ch in html if (0x1F000 <= ord(ch) <= 0x1FAFF) or (0x2190 <= ord(ch) <= 0x2BFF) or ord(ch) in (0x2795, 0x2696, 0x23F3, 0x23F9))
 check('emoji whitelist', found <= ALLOWED, found - ALLOWED)
 check('no animate-being emoji', not (found & set('🙈🐪🐫🐎🐑🐦👤👦👧🧒')))

@@ -1,5 +1,7 @@
 """محاكاة بيئة تطبيق أندرويد (Capacitor) للتحقق من مسارات النطق والتصدير الخاصة به."""
 import pathlib, sys
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from helpers import enter_parent
 from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BOOK = (ROOT / 'dist' / 'book.html').read_text('utf-8')
@@ -24,16 +26,19 @@ with sync_playwright() as pw:
     check('no "not persistent" note in app', pg.locator('.parent-note').count() == 0)
     pg.fill('#new-name', 'كريم'); pg.click('.add-form button[type=submit]'); pg.wait_for_selector('.cover')
     pg.evaluate('go(3)'); pg.wait_for_selector('.story')
-    pg.click('[data-tts-btn]')
-    pg.wait_for_function('!TTS.active', timeout=10000)
+    pg.wait_for_function('!Player.active()', timeout=10000)   # قراءة الغلاف التلقائية
+    pg.evaluate('window.__spoken = []')
+    pg.click('.story-text .spk-icon')
+    pg.wait_for_function('!Player.active()', timeout=10000)
     sp = pg.evaluate('window.__spoken')
-    n = pg.evaluate('sentences(STORY_PAGES[2].text).length + 1')
-    check('native TTS speaks title + every sentence', len(sp) == n, (len(sp), n))
+    n = pg.evaluate('sentences(STORY_PAGES[2].text).length')
+    check('native TTS speaks every sentence of the body', len(sp) == n, (len(sp), n))
     check('native TTS gets normalized Arabic text', all(o['lang'] == 'ar-SA' and 'ﷺ' not in o['text'] for o in sp))
     pg.evaluate('go(23)'); pg.wait_for_selector('.certificate')
     check('print button hidden in Android app', pg.locator('text=طِبَاعَةُ').count() == 0)
-    pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profile-row')
-    pg.locator('.profile-row').first.locator('text=تَصْدِيرُ').click()
+    pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profiles')
+    enter_parent(pg)
+    pg.locator('.parent .profile-row').first.locator('text=تَصْدِيرُ').click()
     pg.wait_for_function('window.__shared !== null', timeout=10000)
     w = pg.evaluate('window.__written')
     check('export written to cache then shared', w['directory'] == 'CACHE' and w['path'].endswith('.html') and pg.evaluate('window.__shared.files[0]').endswith(w['path']))

@@ -5,7 +5,7 @@ b64 = lambda p: base64.b64encode((R / p).read_bytes()).decode()
 NOTICE = 'تَنْبِيهٌ: عَلَى أَجْهِزَةِ الْآيْفُونِ افْتَحُوا الْمَلَفَّ فِي مُتَصَفِّحِ سَفَارِي، لَا فِي الْمُعَايَنَةِ.'
 TITLE = 'دُلُّونِي عَلَى السُّوقِ'
 css = (src / 'style.css').read_text('utf-8').replace('{{AMIRI400}}', b64('amiri-400.woff2')).replace('{{AMIRI700}}', b64('amiri-700.woff2'))
-js = '\n'.join((src / f).read_text('utf-8') for f in ('data.js', 'art.js', 'app.js'))
+js = '\n'.join((src / f).read_text('utf-8') for f in ('data.js', 'art.js', 'photos.js', 'app.js'))
 assert '</script' not in js.lower() and '<!--' not in js
 tpl = (src / 'template.html').read_text('utf-8').replace('{{CSS}}', css).replace('{{NOTICE}}', NOTICE)
 

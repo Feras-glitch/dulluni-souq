@@ -1,5 +1,7 @@
 import functools, http.server, threading, pathlib, json, sys
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent))
+from helpers import enter_parent
 ROOT = pathlib.Path('/home/claude/build'); DIST = ROOT / 'dist'
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -47,9 +49,8 @@ with sync_playwright() as pw:
     del errs[n_before:]
     pg.goto(URL); pg.wait_for_selector('.profile-btn')
     # export from PWA
-    pg.click('#topbar .btn >> nth=0') if pg.locator('#topbar .btn').count() else None
-    pg.wait_for_selector('.profile-row')
-    with pg.expect_download() as dl: pg.locator('.profile-row').first.locator('text=تَصْدِيرُ').click()
+    enter_parent(pg)
+    with pg.expect_download() as dl: pg.locator('.parent .profile-row').first.locator('text=تَصْدِيرُ').click()
     out = DIST / 'export-from-pwa.html'; dl.value.save_as(str(out))
     html = out.read_text('utf-8')
     check('export strips PWA links', '<link rel="manifest"' not in html and 'apple-touch-icon' not in html and 'id="export-data"' in html)
