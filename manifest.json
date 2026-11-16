@@ -1,0 +1,39 @@
+{
+  "id": "./",
+  "name": "دُلُّونِي عَلَى السُّوقِ — حِكَايَةُ التَّاجِرِ الْأَمِينِ",
+  "short_name": "دلوني على السوق",
+  "description": "كتاب تفاعلي للأطفال عن سيرة عبد الرحمن بن عوف رضي الله عنه",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FBF7EE",
+  "theme_color": "#FBF7EE",
+  "categories": [
+    "education",
+    "books",
+    "kids"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

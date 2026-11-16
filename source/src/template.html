@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FBF7EE">
+{{PWA_HEAD}}<title>دُلُّونِي عَلَى السُّوقِ — حِكَايَةُ التَّاجِرِ الْأَمِينِ</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<div id="static-notice" class="static-notice" role="alert">
+  <strong>دُلُّونِي عَلَى السُّوقِ</strong>
+  {{NOTICE}}
+</div>
+<div id="app" hidden>
+  <header id="topbar"></header>
+  <main id="view" tabindex="-1"></main>
+</div>
+<nav id="pager" hidden aria-label="التنقل بين الصفحات"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal-root" hidden></div>
+<script id="app-main">
+{{JS}}
+</script>
+</body>
+</html>
