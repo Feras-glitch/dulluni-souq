@@ -36,8 +36,8 @@ const ILLUSTRATIONS = {
       makkahNight: `
         <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
           <rect width="400" height="300" fill="#1D3557"/>
-          <circle cx="80" cy="55" r="2.5" fill="#FCECC9"/><circle cx="150" cy="40" r="2" fill="#FCECC9"/>
-          <circle cx="310" cy="50" r="3" fill="#FCECC9"/><circle cx="345" cy="95" r="2" fill="#FCECC9"/>
+          <circle cx="80" cy="55" r="2.5" fill="#FCECC9" class="tw"/><circle cx="150" cy="40" r="2" fill="#FCECC9" class="tw"/>
+          <circle cx="310" cy="50" r="3" fill="#FCECC9" class="tw"/><circle cx="345" cy="95" r="2" fill="#FCECC9" class="tw"/>
           <path d="M265 45 A28 28 0 1 0 295 82 A22 22 0 1 1 265 45 Z" fill="#F4C97B"/>
           <path d="M0 175 L75 115 L155 165 L245 105 L335 160 L400 130 L400 300 L0 300 Z" fill="#3D2C22"/>
           <path d="M0 215 L110 175 L220 210 L320 170 L400 205 L400 300 L0 300 Z" fill="#5C4030"/>
@@ -305,11 +305,11 @@ const ILLUSTRATIONS = {
           <rect width="400" height="300" fill="url(#sunsetGrad)"/>
           <circle cx="200" cy="185" r="55" fill="#FFFDF8" opacity="0.85"/>
           <path d="M0 215 Q110 185 220 210 T400 195 L400 300 L0 300 Z" fill="#3D5A45"/>
-          <path d="M150 85 L152.24 89.76 L157 92 L152.24 94.24 L150 99 L147.76 94.24 L143 92 L147.76 89.76 Z" fill="#FFFDF8"/>
-          <path d="M232 61 L234.88 67.12 L241 70 L234.88 72.88 L232 79 L229.12 72.88 L223 70 L229.12 67.12 Z" fill="#FFFDF8"/>
-          <path d="M190 48 L191.92 52.08 L196 54 L191.92 55.92 L190 60 L188.08 55.92 L184 54 L188.08 52.08 Z" fill="#FFFDF8"/>
-          <path d="M300 104 L301.92 108.08 L306 110 L301.92 111.92 L300 116 L298.08 111.92 L294 110 L298.08 108.08 Z" fill="#FFFDF8"/>
-          <path d="M96 115 L97.6 118.4 L101 120 L97.6 121.6 L96 125 L94.4 121.6 L91 120 L94.4 118.4 Z" fill="#FFFDF8"/>
-          <path d="M268 35 L269.6 38.4 L273 40 L269.6 41.6 L268 45 L266.4 41.6 L263 40 L266.4 38.4 Z" fill="#FFFDF8"/>
+          <path d="M150 85 L152.24 89.76 L157 92 L152.24 94.24 L150 99 L147.76 94.24 L143 92 L147.76 89.76 Z" fill="#FFFDF8" class="tw"/>
+          <path d="M232 61 L234.88 67.12 L241 70 L234.88 72.88 L232 79 L229.12 72.88 L223 70 L229.12 67.12 Z" fill="#FFFDF8" class="tw"/>
+          <path d="M190 48 L191.92 52.08 L196 54 L191.92 55.92 L190 60 L188.08 55.92 L184 54 L188.08 52.08 Z" fill="#FFFDF8" class="tw"/>
+          <path d="M300 104 L301.92 108.08 L306 110 L301.92 111.92 L300 116 L298.08 111.92 L294 110 L298.08 108.08 Z" fill="#FFFDF8" class="tw"/>
+          <path d="M96 115 L97.6 118.4 L101 120 L97.6 121.6 L96 125 L94.4 121.6 L91 120 L94.4 118.4 Z" fill="#FFFDF8" class="tw"/>
+          <path d="M268 35 L269.6 38.4 L273 40 L269.6 41.6 L268 45 L266.4 41.6 L263 40 L266.4 38.4 Z" fill="#FFFDF8" class="tw"/>
         </svg>`
     };

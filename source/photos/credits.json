@@ -1,0 +1,41 @@
+{
+  "uhud": {
+    "file": "File:Mount_Uhud.JPG",
+    "author": "Adiput",
+    "license": "ملكية عامة",
+    "caption": "جَبَلُ أُحُدٍ فِي الْمَدِينَةِ الْيَوْمَ"
+  },
+  "marid": {
+    "file": "File:Marid_Castle,_Dumat_al-Jandal,_Saudi_Arabia,_ca._1st_cent._CE_(6).jpg",
+    "author": "Richard Mortel",
+    "license": "CC BY 2.0",
+    "caption": "قَلْعَةُ مَارِدٍ فِي دُومَةِ الْجَنْدَلِ، بِنَاءٌ قَدِيمٌ سَبَقَ الْإِسْلَامَ"
+  },
+  "tabuk": {
+    "file": "File:Tabuk_Fortress_2022.jpg",
+    "author": "amanderson2",
+    "license": "CC BY 2.0",
+    "caption": "قَلْعَةُ تَبُوكَ الْيَوْمَ"
+  },
+  "negash": {
+    "file": "File:NegashMosque.jpg",
+    "author": "Evan Williams",
+    "license": "CC BY-SA 4.0",
+    "caption": "مِنْ دَاخِلِ مَسْجِدِ النَّجَاشِيِّ فِي إِثْيُوبْيَا الْيَوْمَ"
+  },
+  "dome": {
+    "file": "File:Green_Dome,_Masjid_Al_Nabawi.jpg",
+    "author": "Wadie Al-Houh",
+    "license": "CC0",
+    "caption": "الْمَسْجِدُ النَّبَوِيُّ فِي الْمَدِينَةِ الْيَوْمَ"
+  },
+  "_map": {
+    "madinah": "dome",
+    "habasha": "negash",
+    "dumat": "marid",
+    "tabuk": "tabuk",
+    "p6": "uhud",
+    "p7": "marid",
+    "p8": "tabuk"
+  }
+}

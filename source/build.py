@@ -5,7 +5,23 @@ b64 = lambda p: base64.b64encode((R / p).read_bytes()).decode()
 NOTICE = 'تَنْبِيهٌ: عَلَى أَجْهِزَةِ الْآيْفُونِ افْتَحُوا الْمَلَفَّ فِي مُتَصَفِّحِ سَفَارِي، لَا فِي الْمُعَايَنَةِ.'
 TITLE = 'دُلُّونِي عَلَى السُّوقِ'
 css = (src / 'style.css').read_text('utf-8').replace('{{AMIRI400}}', b64('amiri-400.woff2')).replace('{{AMIRI700}}', b64('amiri-700.woff2'))
-js = '\n'.join((src / f).read_text('utf-8') for f in ('data.js', 'art.js', 'photos.js', 'app.js'))
+def photos_js():
+    # صور الأماكن: تُقرأ من photos/ مع ملف النسبة، وتُضمَّن مرة واحدة لكل صورة
+    pdir = R / 'photos'
+    cred = json.loads((pdir / 'credits.json').read_text('utf-8'))
+    use = cred.pop('_map')
+    lines = ['const PHOTO_DATA = {']
+    for k in cred:
+        lines.append('  %s: "data:image/jpeg;base64,%s",' % (k, base64.b64encode((pdir / (k + '.jpg')).read_bytes()).decode()))
+    lines.append('};')
+    lines.append('const PLACE_PHOTOS = {')
+    for place, k in use.items():
+        m = cred[k]
+        credit = 'تصوير: %s · ويكيميديا كومنز · %s' % (m['author'], m['license'])
+        lines.append('  %s: { src: PHOTO_DATA.%s, caption: %s, credit: %s },' % (json.dumps(place), k, json.dumps(m['caption'], ensure_ascii=False), json.dumps(credit, ensure_ascii=False)))
+    lines.append('};')
+    return '\n'.join(lines)
+js = '\n'.join([(src / 'data.js').read_text('utf-8'), (src / 'art.js').read_text('utf-8'), (src / 'art2.js').read_text('utf-8'), photos_js(), (src / 'app.js').read_text('utf-8')])
 assert '</script' not in js.lower() and '<!--' not in js
 tpl = (src / 'template.html').read_text('utf-8').replace('{{CSS}}', css).replace('{{NOTICE}}', NOTICE)
 

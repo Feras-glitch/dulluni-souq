@@ -42,3 +42,13 @@
 - الطفل يسجّل الغلاف ونصوص صفحات القصة. والأهل يسجّلون كل نصوص الكتاب من «لِلْوَالِدَيْنِ ← تَسْجِيلُ الْكِتَابِ بِصَوْتِي».
 - «لِلْوَالِدَيْنِ» محمي برمز من أربعة أرقام، وفيه: إضافة الأطفال وحذفهم، وحذف تسجيلاتهم، ونسخة للعرض، والنسخ الاحتياطي والاستعادة.
 - نسيان الرمز: لا استعادة له من داخل التطبيق؛ يلزم مسح بيانات التطبيق، فاحتفظوا بنسخة احتياطية.
+
+## مصادر الصور الفوتوغرافية
+من ويكيميديا كومنز، بلا أشخاص، ومنسوبة تحت كل صورة في الكتاب:
+| الصورة | المصوِّر | الترخيص |
+|---|---|---|
+| [جبل أحد](https://commons.wikimedia.org/wiki/File:Mount_Uhud.JPG) | Adiput | ملكية عامة |
+| [قلعة مارد، دومة الجندل](https://commons.wikimedia.org/wiki/File:Marid_Castle,_Dumat_al-Jandal,_Saudi_Arabia,_ca._1st_cent._CE_(6).jpg) | Richard Mortel | CC BY 2.0 |
+| [قلعة تبوك](https://commons.wikimedia.org/wiki/File:Tabuk_Fortress_2022.jpg) | amanderson2 | CC BY 2.0 |
+| [مسجد النجاشي](https://commons.wikimedia.org/wiki/File:NegashMosque.jpg) | Evan Williams | CC BY-SA 4.0 |
+| [المسجد النبوي](https://commons.wikimedia.org/wiki/File:Green_Dome,_Masjid_Al_Nabawi.jpg) | Wadie Al-Houh | CC0 |

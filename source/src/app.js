@@ -1021,7 +1021,8 @@ function viewStory({ p }) {
   return h('article', { class: 'card story' },
     h('div', { class: 'chapter' }, CHAPTERS[p.chapter]),
     voiced(h('h2', { class: 'heading' }, h('span', { class: 'pnum', plain: arNum(p.n) }), ' ', p.title), { key: 'p' + p.n + ':t', text: p.title, sel: '.story .heading' }),
-    h('figure', null, sceneEl(p), voiced(h('figcaption', null, p.caption), { key: 'p' + p.n + ':c', text: p.caption, sel: '.story figcaption' })),
+    h('figure', null, sceneEl(p), voiced(h('figcaption', { class: 'scene-cap' }, p.caption), { key: 'p' + p.n + ':c', text: p.caption, sel: '.story .scene-cap' })),
+    PLACE_PHOTOS['p' + p.n] ? photoEl(PLACE_PHOTOS['p' + p.n]) : null,
     voiced(body, bodyUnit),
     glosses.length ? h('p', { class: 'muted small' }, UI.glossaryHint) : null,
     h('div', { class: 'row tools' },
@@ -1294,8 +1295,6 @@ function sceneEl(p) {
     box.append(h('div', { class: 'scene-dots', role: 'group', 'aria-label': 'المشاهد' }, names.map((_, i) =>
       h('button', { class: 'dot' + (i === idx ? ' on' : ''), type: 'button', 'aria-label': 'المشهد ' + (i + 1), 'aria-pressed': String(i === idx), onclick: () => { S.session.scene[p.n] = i; renderAll(); } }))));
   }
-  const ph = PLACE_PHOTOS['p' + p.n];
-  if (ph) box.append(photoEl(ph));
   return box;
 }
 function activityArt(k) { return ILLUSTRATIONS['act_' + k] ? artEl('act_' + k) : null; }
