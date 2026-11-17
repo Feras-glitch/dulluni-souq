@@ -3,7 +3,7 @@
  * رقم الإصدار يُولَّد آليًا عند البناء من محتوى الملفات، فأي تعديل في الكتاب يُنتج عاملًا جديدًا
  * يحذف النسخة القديمة. لا يتعامل مع تسجيلات الأطفال؛ فهي في IndexedDB ولا تمرّ بالشبكة. */
 'use strict';
-const VERSION = 'fc620229f884';
+const VERSION = '83fb6da9009e';
 const CACHE = 'dulluni-souq-' + VERSION;
 const ASSETS = ["./", "index.html", "manifest.json", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
 
