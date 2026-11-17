@@ -12,10 +12,23 @@
   "build": {
     "appId": "io.github.ferasglitch.dulluni",
     "productName": "Dulluni Souq",
-    "files": ["main.js", "app/**"],
-    "directories": { "output": "dist", "buildResources": "build" },
+    "files": [
+      "main.js",
+      "app/**"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.png"
     },
     "nsis": {
@@ -26,6 +39,12 @@
       "createStartMenuShortcut": true,
       "shortcutName": "دلوني على السوق",
       "artifactName": "dulluni-souq-setup-${version}.exe"
-    }
+    },
+    "compression": "maximum",
+    "electronLanguages": [
+      "ar",
+      "en-US"
+    ],
+    "asar": true
   }
 }

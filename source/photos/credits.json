@@ -29,6 +29,18 @@
     "license": "CC0",
     "caption": "الْمَسْجِدُ النَّبَوِيُّ فِي الْمَدِينَةِ الْيَوْمَ"
   },
+  "makkah": {
+    "file": "File:Mecca_from_Jabal_Nur.JPG",
+    "author": "Adiput",
+    "license": "ملكية عامة",
+    "caption": "مَكَّةُ الْمُكَرَّمَةُ بَيْنَ جِبَالِهَا الْيَوْمَ"
+  },
+  "baqi": {
+    "file": "File:Al-Baqi_Cemetery_2021.jpg",
+    "author": "Saleh Al Hussain",
+    "license": "CC BY 4.0",
+    "caption": "مَقْبَرَةُ الْبَقِيعِ فِي الْمَدِينَةِ الْيَوْمَ"
+  },
   "_map": {
     "madinah": "dome",
     "habasha": "negash",
@@ -36,6 +48,9 @@
     "tabuk": "tabuk",
     "p6": "uhud",
     "p7": "marid",
-    "p8": "tabuk"
+    "p8": "tabuk",
+    "makkah": "makkah",
+    "p1": "makkah",
+    "p16": "baqi"
   }
 }

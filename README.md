@@ -52,3 +52,5 @@
 | [قلعة تبوك](https://commons.wikimedia.org/wiki/File:Tabuk_Fortress_2022.jpg) | amanderson2 | CC BY 2.0 |
 | [مسجد النجاشي](https://commons.wikimedia.org/wiki/File:NegashMosque.jpg) | Evan Williams | CC BY-SA 4.0 |
 | [المسجد النبوي](https://commons.wikimedia.org/wiki/File:Green_Dome,_Masjid_Al_Nabawi.jpg) | Wadie Al-Houh | CC0 |
+| [مكة من جبل النور](https://commons.wikimedia.org/wiki/File:Mecca_from_Jabal_Nur.JPG) | Adiput | ملكية عامة |
+| [البقيع](https://commons.wikimedia.org/wiki/File:Al-Baqi_Cemetery_2021.jpg) (مقصوصة) | Saleh Al Hussain | CC BY 4.0 |
