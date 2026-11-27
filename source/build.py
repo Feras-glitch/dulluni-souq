@@ -1,4 +1,4 @@
-import base64, pathlib, json, hashlib, shutil
+import base64, pathlib, json, hashlib, shutil, os
 R = pathlib.Path(__file__).parent
 src = R / 'src'
 b64 = lambda p: base64.b64encode((R / p).read_bytes()).decode()
@@ -21,7 +21,9 @@ def photos_js():
         lines.append('  %s: { src: PHOTO_DATA.%s, caption: %s, credit: %s },' % (json.dumps(place), k, json.dumps(m['caption'], ensure_ascii=False), json.dumps(credit, ensure_ascii=False)))
     lines.append('};')
     return '\n'.join(lines)
+VERSION = (R / 'VERSION').read_text().strip() + ('.' + os.environ['BUILD_NUMBER'] if os.environ.get('BUILD_NUMBER') else '')
 js = '\n'.join([(src / 'data.js').read_text('utf-8'), (src / 'art.js').read_text('utf-8'), (src / 'art2.js').read_text('utf-8'), photos_js(), (src / 'app.js').read_text('utf-8')])
+js = js.replace('__APP_VERSION__', VERSION)
 assert '</script' not in js.lower() and '<!--' not in js
 tpl = (src / 'template.html').read_text('utf-8').replace('{{CSS}}', css).replace('{{NOTICE}}', NOTICE)
 
@@ -62,4 +64,4 @@ for p in sorted(pwa.rglob('*')):
 sw = (src / 'sw.js').read_text('utf-8').replace('__VERSION__', h.hexdigest()[:12]).replace('__ASSETS__', json.dumps(assets))
 (pwa / 'sw.js').write_text(sw, 'utf-8')
 (pwa / '.nojekyll').write_text('')
-print('book.html', round((dist / 'book.html').stat().st_size / 1024), 'KB; pwa version', h.hexdigest()[:12])
+print('version', VERSION, '; book.html', round((dist / 'book.html').stat().st_size / 1024), 'KB; pwa version', h.hexdigest()[:12])

@@ -1,8 +1,8 @@
 import re, sys, json, threading, http.server, functools, pathlib, time
 from playwright.sync_api import sync_playwright
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent))
-from helpers import enter_parent, exit_parent, add_child_in_parent
-ROOT = pathlib.Path('/home/claude/build')
+from helpers import enter_parent, exit_parent, add_child_in_parent, open_settings, close_modal
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 DIST = ROOT / 'dist'
 SHOTS = ROOT / 'shots'
 DIAC = re.compile('[ً-ٰٟ]')
@@ -19,7 +19,7 @@ URL = 'http://127.0.0.1:8765/book.html'
 
 with sync_playwright() as pw:
     br = pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'])
-    ctx = br.new_context(viewport={'width': 1100, 'height': 900}, accept_downloads=True)
+    ctx = br.new_context(bypass_csp=True, viewport={'width': 1100, 'height': 900}, accept_downloads=True)
     ctx.grant_permissions(['microphone'])
     pg = ctx.new_page()
     errors = []
@@ -78,18 +78,18 @@ with sync_playwright() as pw:
     # tashkeel toggle: no diacritics leak anywhere visible
     pg.evaluate('go(11)'); pg.wait_for_selector('.story')
     pg.screenshot(path=str(SHOTS / 'd-p11.png'), full_page=True)
-    pg.click('#topbar [aria-pressed]')
+    open_settings(pg); pg.click('[data-set-tashkeel="1"]'); close_modal(pg)
     leak = []
-    for n in list(range(0, 24)):
+    for n in list(range(0, 25)):
         pg.evaluate(f'go({n})'); pg.wait_for_timeout(30)
         txt = pg.evaluate('document.getElementById("app").innerText + document.getElementById("pager").innerText')
         if DIAC.search(txt): leak.append(n)
-    check('no diacritics leak with tashkeel hidden (24 screens)', not leak, leak)
+    check('no diacritics leak with tashkeel hidden (25 screens)', not leak, leak)
     pg.evaluate('go(11)'); pg.click('[data-gloss]')
     check('glossary modal stripped too', not DIAC.search(pg.inner_text('.modal')))
     pg.keyboard.press('Escape')
     pg.screenshot(path=str(SHOTS / 'd-p11-plain.png'))
-    pg.click('#topbar [aria-pressed]')
+    open_settings(pg); pg.click('[data-set-tashkeel="0"]'); close_modal(pg)
     check('tashkeel restored', DIAC.search(pg.inner_text('.story-text')) is not None)
 
     # sources modal
@@ -123,14 +123,18 @@ with sync_playwright() as pw:
     check('resume at last page', pg.evaluate('S.page') == 2)
 
     # values badge
-    pg.evaluate('go(18)'); pg.wait_for_selector('.values-grid')
-    for _ in range(4): pg.click('.value-card:not(.open) .btn-primary')
+    pg.evaluate('goId("values")'); pg.wait_for_selector('.values-grid')
+    check('reveal locked until the question is heard', pg.locator('[data-reveal]:disabled').count() == 4)
+    pg.evaluate('VALUES.forEach(v => { S.progress.heard[v.id] = true; }); renderAll()')
+    for _ in range(4): pg.click('.value-card:not(.open) [data-reveal]')
     check('values badge after 4 reveals', pg.evaluate('badges().values'))
 
     # quiz: first attempt only
-    pg.evaluate('go(19)'); pg.wait_for_selector('.question')
+    pg.evaluate('goId("quiz")'); pg.wait_for_selector('.question')
+    check('quiz bank: 10 questions, 5 per round, all distinct', pg.evaluate('QUIZ.length === 10 && new Set(S.session.quiz.qs.map(q => q.id)).size === 5'))
+    check('quiz explanations with hadith are cited', pg.evaluate('QUIZ.filter(q => q.explain.includes("«")).every(q => q.source)'))
     for qi in range(5):
-        correct = pg.evaluate(f'QUIZ[{qi}].correct')
+        correct = pg.evaluate(f'S.session.quiz.qs[{qi}].correct')
         if qi == 0:
             wrong = (correct + 1) % 3
             pg.click(f'.opt[data-opt="{wrong}"]')
@@ -142,7 +146,7 @@ with sync_playwright() as pw:
     pg.screenshot(path=str(SHOTS / 'd-quiz.png'), full_page=True)
 
     # timeline
-    pg.evaluate('S.session.timeline=null; go(20)'); pg.wait_for_selector('.timeline')
+    pg.evaluate('S.session.timeline=null; goId("timeline")'); pg.wait_for_selector('.timeline')
     orders = pg.evaluate('[...document.querySelectorAll(".tl-item")].map(e=>+e.dataset.order)')
     check('timeline starts shuffled', orders != sorted(orders), orders)
     check('dates hidden before solving', pg.locator('.tl-when').count() == 0)
@@ -158,16 +162,34 @@ with sync_playwright() as pw:
     check('timeline solved reveals dates', pg.locator('.tl-when').count() == 7 and pg.evaluate('badges().timeline'))
 
     # market
-    pg.evaluate('go(21)'); pg.wait_for_selector('.jars'); pg.click('[data-distribute]')
+    pg.evaluate('goId("market")'); pg.wait_for_selector('.jars')
+    check('market check disabled until all coins placed', pg.is_disabled('[data-distribute]'))
+    for _ in range(4): pg.click('[data-jar-more="home"]')
+    for _ in range(3): pg.click('[data-jar-more="charity"]')
+    for _ in range(3): pg.click('[data-jar-more="project"]')
+    pg.click('[data-distribute]')
+    check('wrong split rejected, no badge', pg.is_visible('.feedback.no') and not pg.evaluate('badges().market'))
+    pg.click('[data-jar-less="home"]'); pg.click('[data-jar-more="charity"]'); pg.click('[data-distribute]')
     counts = pg.evaluate('[...document.querySelectorAll(".jar-count")].map(e=>e.textContent)')
-    check('market UI 10 → ٤/٣/٣', counts[0].startswith('٤') and counts[1].startswith('٣') and counts[2].startswith('٣'), counts)
+    check('market 10 → ٤/٣/٣ accepted with badge', counts[0].startswith('٤') and counts[1].startswith('٣') and pg.evaluate('badges().market'), counts)
+    # مشروعي الصغير
+    pg.evaluate('goId("project")'); pg.wait_for_selector('.proj-form')
+    pg.fill('#proj-what', 'أساور'); pg.fill('#proj-cost', '٥'); pg.fill('#proj-price', '12'); pg.click('[data-proj-add]')
+    pg.fill('#proj-what', 'بطاقة'); pg.fill('#proj-cost', '3'); pg.fill('#proj-price', '2'); pg.click('[data-proj-add]')
+    check('ledger computes profit and loss', '٦' in pg.inner_text('[data-proj-total]') and pg.locator('td.loss').count() == 1, pg.inner_text('[data-proj-total]'))
+    pg.click('[data-proj-market]'); pg.wait_for_selector('.jars')
+    check('ledger profit goes to the market', pg.evaluate('S.session.marketN') == 6)
+    pg.screenshot(path=str(SHOTS / 'd-market.png'), full_page=True)
     pg.screenshot(path=str(SHOTS / 'd-market.png'), full_page=True)
 
-    pg.evaluate('go(17)'); pg.wait_for_selector('.map-svg'); pg.click('[data-loc="sargh"]')
+    pg.evaluate('goId("map")'); pg.wait_for_selector('.map-svg'); pg.click('[data-loc="sargh"]')
     check('map pin selects', 'سَرْغُ' in pg.inner_text('.map-info'))
     pg.screenshot(path=str(SHOTS / 'd-map.png'), full_page=True)
-    pg.evaluate('go(22)'); pg.click('.flash >> nth=0'); pg.screenshot(path=str(SHOTS / 'd-flash.png'), full_page=True)
-    pg.evaluate('go(23)'); pg.wait_for_selector('.certificate')
+    pg.evaluate('goId("flashcards")'); pg.click('.flash >> nth=0'); pg.screenshot(path=str(SHOTS / 'd-flash.png'), full_page=True)
+    pg.evaluate('S.progress.read = {}; goId("certificate")'); pg.wait_for_selector('[data-cert-locked]')
+    check('certificate locked before reading the whole story', pg.locator('.certificate').count() == 0)
+    for n in range(1, 17): pg.evaluate(f'go({n})')
+    pg.evaluate('goId("certificate")'); pg.wait_for_selector('.certificate')
     cert = pg.inner_text('.certificate')
     check('certificate gendered + count', 'الرَّاوِيَةِ الْأَمِينَةِ' in cert and 'بِصَوْتِهَا: ٢ مِنْ ١٦' in cert and 'دلال' in cert, cert[:200])
     pg.screenshot(path=str(SHOTS / 'd-cert.png'), full_page=True)
@@ -184,14 +206,15 @@ with sync_playwright() as pw:
     pg.click('#topbar .btn >> nth=0'); pg.wait_for_selector('.profiles')
     enter_parent(pg)
     row = pg.locator('.parent .profile-row', has_text='دلال')
-    with pg.expect_download() as dl: row.locator('text=تَصْدِيرُ').click()
+    row.locator('text=تَصْدِيرُ').click(); pg.wait_for_selector('[data-export-child]')
+    with pg.expect_download() as dl: pg.click('[data-export-child]')
     exp_path = ROOT / 'dist' / 'export-test.html'
     dl.value.save_as(str(exp_path))
     check('no console errors (main)', not errors, errors)
     ctx.close()
 
     # open export standalone in a fresh context from file://
-    ctx2 = br.new_context(viewport={'width': 390, 'height': 844})
+    ctx2 = br.new_context(bypass_csp=True, viewport={'width': 390, 'height': 844})
     p2 = ctx2.new_page(); err2 = []
     p2.on('pageerror', lambda e: err2.append(str(e)))
     p2.goto(exp_path.as_uri()); p2.wait_for_selector('.cover')
@@ -210,7 +233,7 @@ with sync_playwright() as pw:
     ctx2.close()
 
     # mobile screenshots
-    ctx3 = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
+    ctx3 = br.new_context(bypass_csp=True, viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
     p3 = ctx3.new_page(); p3.goto(URL); p3.wait_for_selector('.profiles')
     p3.screenshot(path=str(SHOTS / 'm-profiles.png'), full_page=True)
     p3.fill('#new-name', 'فرح'); p3.click('.add-form button[type=submit]'); p3.wait_for_selector('.cover')
@@ -219,14 +242,14 @@ with sync_playwright() as pw:
     ctx3.close()
 
     # JS disabled → iOS-style notice
-    ctx4 = br.new_context(java_script_enabled=False); p4 = ctx4.new_page(); p4.goto(URL)
+    ctx4 = br.new_context(bypass_csp=True, java_script_enabled=False); p4 = ctx4.new_page(); p4.goto(URL)
     check('notice visible without JS', p4.is_visible('#static-notice') and p4.is_hidden('#app') and 'سَفَارِي' in p4.inner_text('#static-notice'))
     ctx4.close()
     br.close()
 
 # emoji whitelist on the built file
 html = (DIST / 'book.html').read_text('utf-8')
-ALLOWED = set('🔒⬆🔑→➕🔊⏹🎙▶🗑✓📚⬇🏠⬅➡🌸⭐🏅🪙⚖⏳○▲▼−💎🌱🤝🎁❤🖨')
+ALLOWED = set('🔒⬆🔑→➕🔊⏹🎙▶🗑✓📚⬇🏠⬅➡🌸⭐🏅🪙⚖⏳○▲▼−💎🌱🤝🎁❤🖨☰⚙📋⚠')
 found = set(ch for ch in html if (0x1F000 <= ord(ch) <= 0x1FAFF) or (0x2190 <= ord(ch) <= 0x2BFF) or ord(ch) in (0x2795, 0x2696, 0x23F3, 0x23F9))
 check('emoji whitelist', found <= ALLOWED, found - ALLOWED)
 check('no animate-being emoji', not (found & set('🙈🐪🐫🐎🐑🐦👤👦👧🧒')))

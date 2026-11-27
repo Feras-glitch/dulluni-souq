@@ -1,26 +1,58 @@
 name: بناء تطبيقي أندرويد وويندوز
 
+# كل دفع يُختبر ويُبنى؛ والنشر في صفحة الإصدارات يكون بوسم إصدار (v1.2.0 مثلًا) أو يدويًّا
 on:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'نشر إصدار في صفحة الإصدارات'
+        type: boolean
+        default: false
   push:
     branches: [main]
+    tags: ['v*']
     paths:
       - 'source/**'
       - 'apps/**'
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.json'
       - '.github/workflows/apps.yml'
 
 permissions:
   contents: write
 
 jobs:
+  test:
+    name: الاختبارات
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: { python-version: '3.12' }
+      - name: بناء الكتاب ومطابقة ملفات الموقع
+        run: |
+          python3 source/build.py
+          python3 source/sync_root.py --check
+      - name: تثبيت Playwright
+        run: pip install playwright==1.63.0
+      - name: تشغيل الاختبارات
+        run: |
+          set -e
+          for t in test_book test_pwa test_native test_voice test_features; do
+            echo "::group::$t"; python3 source/tests/$t.py; echo "::endgroup::"
+          done
+
   android:
     name: أندرويد (APK)
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: { python-version: '3.12' }
       - name: بناء الكتاب
+        env: { BUILD_NUMBER: '${{ github.run_number }}' }
         run: python3 source/build.py
       - uses: actions/setup-node@v7
         with: { node-version: '22' }
@@ -29,7 +61,7 @@ jobs:
       - name: تجهيز مشروع أندرويد
         working-directory: apps/android
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           mkdir -p www && cp ../../source/dist/book.html www/index.html
           npx cap add android
           npx capacitor-assets generate --android --iconBackgroundColor '#B04D2A' --splashBackgroundColor '#FBF7EE'
@@ -39,7 +71,8 @@ jobs:
         working-directory: apps/android/android
         run: |
           # رقم متزايد مع كل بناء حتى يُثبَّت التحديث فوق القديم
-          sed -i -E "s/versionCode [0-9]+/versionCode $((100 + GITHUB_RUN_NUMBER))/; s/versionName \"[^\"]*\"/versionName \"1.1.${GITHUB_RUN_NUMBER}\"/" app/build.gradle
+          V=$(cat ../../../source/VERSION)
+          sed -i -E "s/versionCode [0-9]+/versionCode $((100 + GITHUB_RUN_NUMBER))/; s/versionName \"[^\"]*\"/versionName \"${V}.${GITHUB_RUN_NUMBER}\"/" app/build.gradle
           grep -E "versionCode|versionName" app/build.gradle
       - name: بناء APK موقّع
         working-directory: apps/android/android
@@ -68,12 +101,14 @@ jobs:
 
   windows:
     name: ويندوز (مُثبِّت)
+    needs: test
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: { python-version: '3.12' }
       - name: بناء الكتاب
+        env: { BUILD_NUMBER: '${{ github.run_number }}' }
         run: python source/build.py
       - uses: actions/setup-node@v7
         with: { node-version: '22' }
@@ -83,7 +118,8 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
+          npm version "$(cat ../../source/VERSION).${{ github.run_number }}" --no-git-tag-version --allow-same-version
           mkdir -p app && cp ../../source/dist/book.html app/index.html && cp build/icon.png app/icon.png
           npx electron-builder --win nsis --x64 --publish never
           cp dist/*.exe "$GITHUB_WORKSPACE/dulluni-souq-setup.exe"
@@ -93,14 +129,15 @@ jobs:
   release:
     name: نشر الملفات
     needs: [android, windows]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v8
         with: { merge-multiple: true }
       - uses: softprops/action-gh-release@v3
         with:
-          tag_name: build-${{ github.run_number }}
-          name: دلوني على السوق — إصدار ${{ github.run_number }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: دلوني على السوق — ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('بناء {0}', github.run_number) }}
           make_latest: true
           body: |
             - **dulluni-souq-android.apk**: أندرويد، للهاتف والتابلت. موقّع بمفتاح ثابت: التحديث يُثبَّت فوق السابق وتبقى التسجيلات.

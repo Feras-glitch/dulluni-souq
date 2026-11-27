@@ -4,11 +4,12 @@
   "version": "1.0.0",
   "description": "غلاف أندرويد لكتاب دلوني على السوق — يعمل دون اتصال",
   "dependencies": {
+    "@capacitor-community/text-to-speech": "8.0.2",
     "@capacitor/android": "8.6.2",
+    "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.6.2",
     "@capacitor/filesystem": "8.1.5",
-    "@capacitor/share": "8.0.3",
-    "@capacitor-community/text-to-speech": "8.0.2"
+    "@capacitor/share": "8.0.3"
   },
   "devDependencies": {
     "@capacitor/assets": "4.0.0",

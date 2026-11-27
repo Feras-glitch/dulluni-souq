@@ -5,3 +5,5 @@ apps/android/www/
 apps/windows/node_modules/
 apps/windows/dist/
 apps/windows/app/
+source/shots/
+__pycache__/

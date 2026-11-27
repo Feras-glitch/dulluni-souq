@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from helpers import enter_parent, exit_parent, add_child_in_parent
 ROOT = pathlib.Path(__file__).resolve().parent.parent; DIST = ROOT / 'dist'
-OLD = pathlib.Path('/home/claude/dulluni-souq/index.html')   # الإصدار المنشور سابقًا (قاعدة بيانات v1)
+OLD = pathlib.Path(__import__('os').environ.get('OLD_INDEX', '/tmp/dulluni-old-index.html'))   # الإصدار المنشور سابقًا (قاعدة بيانات v1)
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 if OLD.exists(): shutil.copy(OLD, DIST / 'old-v1.html')
@@ -20,7 +20,7 @@ def rec(pg, sel_btn, ms=1200):
     pg.click('.btn-stop'); pg.wait_for_function('Rec.state === "idle"', timeout=8000)
 with sync_playwright() as pw:
     br = pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'])
-    ctx = br.new_context(viewport={'width': 1000, 'height': 900}, accept_downloads=True); ctx.grant_permissions(['microphone'])
+    ctx = br.new_context(bypass_csp=True, viewport={'width': 1000, 'height': 900}, accept_downloads=True); ctx.grant_permissions(['microphone'])
     ctx.add_init_script(MOCK_TTS)
     pg = ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
@@ -36,7 +36,7 @@ with sync_playwright() as pw:
     pg.wait_for_function('!Player.active()')
     # زر استماع عند كل نص في كل شاشة
     counts = {}
-    for n in range(24):
+    for n in range(25):
         pg.evaluate(f'go({n})'); pg.wait_for_timeout(40)
         counts[n] = pg.locator('#view .spk').count()
     check('every screen has speaker buttons', all(c >= 1 for c in counts.values()) and counts[1] == 3, counts)
@@ -63,11 +63,11 @@ with sync_playwright() as pw:
     # تسجيل الأهل
     pg.click('[data-narrate]'); pg.wait_for_selector('.banner.narr')
     pg.evaluate('go(1)'); pg.wait_for_selector('.story')
-    check('narrator mode: record box under every text, no child box', pg.locator('.rec-box.compact').count() == 3 and pg.locator('.rec-box:not(.compact)').count() == 0)
+    check('narrator mode: record box under every text, no child box', pg.locator('.rec-box.compact').count() == 3 + pg.evaluate('GLOSSARY.filter(g => g.page === 1).length') and pg.locator('.rec-box:not(.compact)').count() == 0)
     rec(pg, '.story .heading + .rec-box .btn-rec')
     rec(pg, '.story-text + .rec-box .btn-rec')
     check('narrator progress counter updates', '٢' in pg.inner_text('[data-narr-count]'))
-    pg.click('.banner.narr .btn'); pg.wait_for_selector('.parent')
+    pg.click('.banner.narr [data-finish]'); pg.wait_for_selector('.parent')
     exit_parent(pg)
     pg.locator('.profile-btn').first.click(); pg.wait_for_selector('#topbar .who'); pg.evaluate('go(1)'); pg.wait_for_selector('.story')
     check('title now offers «family voice» instead of TTS', pg.locator('.story .heading .spk-family').count() == 1 and pg.locator('.story .heading .spk-icon').count() == 0)
@@ -80,7 +80,7 @@ with sync_playwright() as pw:
     txt = bk.read_text('utf-8')
     check('backup contains children, parent voice, and no PIN', '"_parent"' in txt and 'قديم' in txt and '"pin"' not in txt)
     check('no errors (device 1)', not errs, errs)
-    ctx2 = br.new_context(accept_downloads=True); ctx2.add_init_script(MOCK_TTS)
+    ctx2 = br.new_context(bypass_csp=True, accept_downloads=True); ctx2.add_init_script(MOCK_TTS)
     p2 = ctx2.new_page(); e2 = []; p2.on('pageerror', lambda e: e2.append(str(e))); p2.on('dialog', lambda d: d.accept())
     p2.goto(BASE + 'book.html'); p2.wait_for_selector('.profiles')
     enter_parent(p2, '1357')

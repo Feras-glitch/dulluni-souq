@@ -2,35 +2,93 @@ const ILLUSTRATIONS = {
       cover: `
         <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#FCECC9"/>
+            <linearGradient id="cvSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1D3557"/>
+              <stop offset="55%" stop-color="#8C5A7A"/>
               <stop offset="100%" stop-color="#F4C97B"/>
             </linearGradient>
-            <filter id="paperShadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#2B2118" flood-opacity="0.22"/>
+            <linearGradient id="cvGround" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#E3B363"/>
+              <stop offset="100%" stop-color="#C98A3A"/>
+            </linearGradient>
+            <pattern id="cvStar" width="20" height="20" patternUnits="userSpaceOnUse">
+              <rect width="20" height="20" fill="#C25934"/>
+              <path d="M10 2 L12.5 7.5 L18 10 L12.5 12.5 L10 18 L7.5 12.5 L2 10 L7.5 7.5 Z" fill="#D99B26" opacity="0.85"/>
+            </pattern>
+            <pattern id="cvAwning" width="16" height="16" patternUnits="userSpaceOnUse">
+              <rect width="8" height="16" fill="#FBF7EE"/><rect x="8" width="8" height="16" fill="#1E5631"/>
+            </pattern>
+            <pattern id="cvAwning2" width="16" height="16" patternUnits="userSpaceOnUse">
+              <rect width="8" height="16" fill="#FBF7EE"/><rect x="8" width="8" height="16" fill="#C25934"/>
+            </pattern>
+            <filter id="paperShadow" x="-10%" y="-10%" width="120%" height="130%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2B2118" flood-opacity="0.25"/>
             </filter>
           </defs>
-          <rect width="400" height="300" fill="url(#skyGrad)"/>
-          <circle cx="200" cy="125" r="56" fill="#FFF8E7" opacity="0.85"/>
-          <path d="M0 190 Q110 155 220 185 T400 175 L400 300 L0 300 Z" fill="#E3B363" filter="url(#paperShadow)"/>
-          <path d="M0 220 Q150 195 290 225 T400 215 L400 300 L0 300 Z" fill="#C98A3A" filter="url(#paperShadow)"/>
-          <path d="M0 0 L400 0 L400 300 L355 300 L355 120 Q355 45 200 45 Q45 45 45 120 L45 300 L0 300 Z" fill="#C25934" filter="url(#paperShadow)"/>
-          <path d="M35 300 L35 120 Q35 35 200 35 Q365 35 365 120 L365 300 L350 300 L350 122 Q350 50 200 50 Q50 50 50 122 L50 300 Z" fill="#D99B26"/>
-          <g transform="translate(200, 185)" filter="url(#paperShadow)">
-            <rect x="-4" y="-45" width="8" height="75" rx="3" fill="#8C5A2B"/>
-            <rect x="-25" y="26" width="50" height="8" rx="4" fill="#8C5A2B"/>
-            <line x1="-55" y1="-35" x2="55" y2="-35" stroke="#D99B26" stroke-width="5" stroke-linecap="round"/>
-            <path d="M-72 -5 Q-55 12 -38 -5 Z" fill="#E5A933"/>
-            <path d="M38 -5 Q55 12 72 -5 Z" fill="#E5A933"/>
-            <line x1="-55" y1="-35" x2="-68" y2="-5" stroke="#9B4121" stroke-width="1.5"/>
-            <line x1="-55" y1="-35" x2="-42" y2="-5" stroke="#9B4121" stroke-width="1.5"/>
-            <line x1="55" y1="-35" x2="42" y2="-5" stroke="#9B4121" stroke-width="1.5"/>
-            <line x1="55" y1="-35" x2="68" y2="-5" stroke="#9B4121" stroke-width="1.5"/>
+          <rect width="400" height="300" fill="url(#cvSky)"/>
+          <circle class="tw" cx="110" cy="70" r="1.8" fill="#FFF8E7"/>
+          <circle class="tw" cx="150" cy="52" r="1.4" fill="#FFF8E7"/>
+          <circle class="tw" cx="250" cy="60" r="1.6" fill="#FFF8E7"/>
+          <circle class="tw" cx="292" cy="88" r="1.3" fill="#FFF8E7"/>
+          <circle class="tw" cx="205" cy="80" r="1.2" fill="#FFF8E7"/>
+          <path d="M268 64 a16 16 0 1 0 12 26 a13 13 0 1 1 -12 -26 Z" fill="#F4C97B"/>
+          <g fill="#6B4A3A" opacity="0.75">
+            <rect x="70" y="150" width="34" height="26"/><rect x="100" y="140" width="28" height="36"/>
+            <rect x="268" y="146" width="36" height="30"/><rect x="300" y="154" width="30" height="22"/>
+            <rect x="170" y="155" width="60" height="21"/>
           </g>
-          <ellipse cx="105" cy="240" rx="18" ry="24" fill="#9B4121" filter="url(#paperShadow)"/>
-          <rect x="97" y="212" width="16" height="8" rx="3" fill="#C25934"/>
-          <ellipse cx="300" cy="242" rx="16" ry="20" fill="#1E5631" filter="url(#paperShadow)"/>
-          <rect x="293" y="218" width="14" height="7" rx="3" fill="#587246"/>
+          <g class="sway" fill="#2F4A2A">
+            <rect x="141" y="118" width="4" height="58" fill="#6B4A3A"/>
+            <path d="M143 120 q-22 -4 -30 10 q14 -10 30 -8 q-10 -14 -28 -12 q20 0 28 10 q4 -16 22 -20 q-16 10 -20 22 q18 -6 28 6 q-16 -6 -30 -6 Z"/>
+          </g>
+          <g class="sway" fill="#2F4A2A">
+            <rect x="247" y="126" width="4" height="50" fill="#6B4A3A"/>
+            <path d="M249 128 q-20 -4 -28 9 q13 -9 28 -7 q-9 -13 -26 -11 q19 0 26 9 q4 -15 20 -18 q-15 9 -18 20 q17 -5 26 6 q-15 -6 -28 -6 Z"/>
+          </g>
+          <rect x="0" y="176" width="400" height="124" fill="url(#cvGround)"/>
+          <g>
+            <rect x="62" y="196" width="80" height="44" fill="#8C5A2B"/>
+            <path class="flag" d="M56 184 L148 184 L142 202 L62 202 Z" fill="url(#cvAwning)"/>
+            <ellipse cx="80" cy="200" rx="9" ry="7" fill="#C25934"/>
+            <ellipse cx="98" cy="199" rx="8" ry="6" fill="#E5A933"/>
+            <ellipse cx="116" cy="200" rx="9" ry="7" fill="#9B4121"/>
+            <rect x="258" y="196" width="80" height="44" fill="#8C5A2B"/>
+            <path class="flag" d="M252 184 L344 184 L338 202 L258 202 Z" fill="url(#cvAwning2)"/>
+            <rect x="270" y="190" width="16" height="12" rx="3" fill="#FBF7EE"/>
+            <rect x="290" y="188" width="14" height="14" rx="3" fill="#E3B363"/>
+            <rect x="308" y="191" width="18" height="11" rx="3" fill="#1E5631"/>
+          </g>
+          <path d="M104 300 L152 228 L248 228 L296 300 Z" fill="#9B4121"/>
+          <path d="M116 292 L157 234 L243 234 L284 292 Z" fill="none" stroke="#E5A933" stroke-width="2" stroke-dasharray="6 4"/>
+          <path d="M140 270 L260 270 M150 252 L250 252" stroke="#C25934" stroke-width="3"/>
+          <g transform="translate(200, 214)">
+            <rect x="-62" y="22" width="124" height="14" rx="4" fill="#6B4A3A"/>
+            <rect x="-4" y="-48" width="8" height="72" rx="3" fill="#8C5A2B"/>
+            <circle cx="0" cy="-50" r="6" fill="#D99B26"/>
+            <line x1="-56" y1="-38" x2="56" y2="-38" stroke="#D99B26" stroke-width="5" stroke-linecap="round"/>
+            <line x1="-56" y1="-38" x2="-70" y2="-6" stroke="#9B4121" stroke-width="1.5"/>
+            <line x1="-56" y1="-38" x2="-42" y2="-6" stroke="#9B4121" stroke-width="1.5"/>
+            <line x1="56" y1="-38" x2="42" y2="-6" stroke="#9B4121" stroke-width="1.5"/>
+            <line x1="56" y1="-38" x2="70" y2="-6" stroke="#9B4121" stroke-width="1.5"/>
+            <path d="M-74 -6 Q-56 12 -38 -6 Z" fill="#E5A933"/>
+            <path d="M38 -6 Q56 12 74 -6 Z" fill="#E5A933"/>
+            <circle cx="-56" cy="-9" r="5" fill="#FFF8E7"/>
+            <rect x="50" y="-14" width="12" height="8" rx="2" fill="#C25934"/>
+          </g>
+          <ellipse cx="40" cy="268" rx="20" ry="26" fill="#9B4121" filter="url(#paperShadow)"/>
+          <rect x="31" y="238" width="18" height="8" rx="3" fill="#C25934"/>
+          <ellipse cx="362" cy="270" rx="17" ry="22" fill="#1E5631" filter="url(#paperShadow)"/>
+          <rect x="354" y="245" width="16" height="7" rx="3" fill="#587246"/>
+          <path d="M0 0 L400 0 L400 300 L372 300 L372 128 Q372 38 200 30 Q28 38 28 128 L28 300 L0 300 Z" fill="url(#cvStar)" filter="url(#paperShadow)"/>
+          <path d="M28 300 L28 128 Q28 38 200 30 Q372 38 372 128 L372 300 L362 300 L362 130 Q362 48 200 40 Q38 48 38 130 L38 300 Z" fill="#D99B26"/>
+          <g>
+            <line x1="120" y1="44" x2="120" y2="66" stroke="#6B4A3A" stroke-width="1.5"/>
+            <path d="M112 66 h16 l-3 16 h-10 Z" fill="#8C5A2B"/>
+            <rect class="glow" x="114" y="70" width="12" height="10" rx="2" fill="#FCECC9"/>
+            <line x1="280" y1="44" x2="280" y2="66" stroke="#6B4A3A" stroke-width="1.5"/>
+            <path d="M272 66 h16 l-3 16 h-10 Z" fill="#8C5A2B"/>
+            <rect class="glow" x="274" y="70" width="12" height="10" rx="2" fill="#FCECC9"/>
+          </g>
         </svg>`,
 
       makkahNight: `

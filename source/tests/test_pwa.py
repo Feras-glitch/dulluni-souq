@@ -2,7 +2,7 @@ import functools, http.server, threading, pathlib, json, sys
 from playwright.sync_api import sync_playwright
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent))
 from helpers import enter_parent
-ROOT = pathlib.Path('/home/claude/build'); DIST = ROOT / 'dist'
+ROOT = pathlib.Path(__file__).resolve().parent.parent; DIST = ROOT / 'dist'
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 srv = http.server.ThreadingHTTPServer(('127.0.0.1', 8766), functools.partial(Q, directory=str(DIST)))
@@ -12,7 +12,7 @@ res = []
 def check(n, c, info=''): res.append(c); print(('PASS ' if c else 'FAIL ') + n + ('' if c else ' — ' + str(info)))
 with sync_playwright() as pw:
     br = pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'])
-    ctx = br.new_context(accept_downloads=True); ctx.grant_permissions(['microphone'])
+    ctx = br.new_context(bypass_csp=True, accept_downloads=True); ctx.grant_permissions(['microphone'])
     pg = ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
     pg.on('console', lambda m: errs.append(m.text + ' @ ' + str(m.location)) if m.type == 'error' else None)
@@ -50,7 +50,8 @@ with sync_playwright() as pw:
     pg.goto(URL); pg.wait_for_selector('.profile-btn')
     # export from PWA
     enter_parent(pg)
-    with pg.expect_download() as dl: pg.locator('.parent .profile-row').first.locator('text=تَصْدِيرُ').click()
+    pg.locator('.parent .profile-row').first.locator('text=تَصْدِيرُ').click()
+    with pg.expect_download() as dl: pg.click('[data-export-child]')
     out = DIST / 'export-from-pwa.html'; dl.value.save_as(str(out))
     html = out.read_text('utf-8')
     check('export strips PWA links', '<link rel="manifest"' not in html and 'apple-touch-icon' not in html and 'id="export-data"' in html)
