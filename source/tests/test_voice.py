@@ -29,7 +29,12 @@ with sync_playwright() as pw:
         pg.goto(BASE + 'old-v1.html'); pg.wait_for_selector('.profiles')
         pg.fill('#new-name', 'قديم'); pg.click('.add-form button[type=submit]'); pg.wait_for_selector('.cover')
     pg.goto(BASE + 'book.html'); pg.wait_for_selector('.profiles')
-    check('DB upgrade v1→v2 keeps existing children', pg.locator('.profile-btn', has_text='قديم').count() == 1)
+    if OLD.exists():
+        check('DB upgrade v1→v2 keeps existing children', pg.locator('.profile-btn', has_text='قديم').count() == 1)
+    else:   # في CI لا توجد النسخة القديمة: يُنشأ الطفل هنا وتُتخطّى مقارنة الترقية
+        print('SKIP DB upgrade (old build not available)')
+        pg.fill('#new-name', 'قديم'); pg.click('.add-form button[type=submit]'); pg.wait_for_selector('.cover')
+        pg.evaluate('toProfiles()'); pg.wait_for_selector('.profiles')
     pg.locator('.profile-btn').first.click(); pg.wait_for_selector('.cover')
     pg.wait_for_function('window.__said.length >= 1', timeout=8000)
     check('cover is read automatically on opening', 'دُلُّونِي' in pg.evaluate('window.__said[0]'))
