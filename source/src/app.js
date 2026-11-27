@@ -244,9 +244,23 @@ const UI = {
   wsGloss: 'صِلِ الْكَلِمَةَ بِمَعْنَاهَا.',
   wsTimeline: 'رَتِّبِ الْأَحْدَاثَ بِكِتَابَةِ الرَّقْمِ مِنْ ١ إِلَى ٧.',
   wsQuiz: 'ضَعْ عَلَامَةً أَمَامَ الْإِجَابَةِ الصَّحِيحَةِ.',
-  wsPrint: '🖨 طِبَاعَةٌ'
+  wsPrint: '🖨 طِبَاعَةٌ',
+  /* المحذوف المؤقت */
+  trashBtn: 'اسْتِرْجَاعُ تَسْجِيلَاتٍ مَحْذُوفَةٍ ({n})',
+  trashTitle: 'تَسْجِيلَاتٌ مَحْذُوفَةٌ',
+  trashIntro: 'يَبْقَى التَّسْجِيلُ الْمَحْذُوفُ أَوِ الْمُسْتَبْدَلُ هُنَا ثَلَاثِينَ يَوْمًا، ثُمَّ يُحْذَفُ نِهَائِيًّا.',
+  restoreOne: 'اسْتِرْجَاعٌ',
+  restoredOne: 'اسْتُرْجِعَ التَّسْجِيلُ.',
+  deletedAt: 'حُذِفَ فِي {d}',
+  /* أخرى */
+  cantPlay: 'هَذَا التَّسْجِيلُ بِصِيغَةٍ لَا يُشَغِّلُهَا هَذَا الْجِهَازُ؛ افْتَحُوهُ فِي مُتَصَفِّحِ كْرُومْ أَوْ عَلَى جِهَازٍ آخَرَ.',
+  updateReady: 'وَصَلَ تَحْدِيثٌ لِلْكِتَابِ.',
+  updateNow: 'تَحْدِيثٌ الْآنَ'
 };
 const APP_VERSION = '__APP_VERSION__';
+/* مفاتيح مساعدة لا تُعرض ولا تُصدَّر: المسوّدة، والمحذوف المؤقت */
+const isAux = k => k.endsWith('|draft') || k.endsWith('|trash');
+const TRASH_DAYS = 30;
 const PARENT_ID = '_parent';
 
 const BADGES = {
@@ -398,7 +412,7 @@ function shuffle(a) {
 }
 function toast(msg, kind, ms) {
   const el = document.getElementById('toast');
-  el.textContent = T(msg);
+  el.textContent = ''; el.append(...iconize(T(msg)));
   el.className = 'toast show' + (kind ? ' ' + kind : '');
   clearTimeout(S.toastTimer);
   S.toastTimer = setTimeout(() => { el.className = 'toast'; }, ms || 5000);
@@ -552,7 +566,7 @@ const Player = {
       const a = new Audio(recUrl(rec));
       this.audio = a;
       a.onended = () => res('ok');
-      a.onerror = () => res('fail');
+      a.onerror = () => { toast(UI.cantPlay, 'error', 8000); res('fail'); };
       const p = a.play(); if (p && p.catch) p.catch(() => res('fail'));
     });
   },
@@ -719,6 +733,7 @@ const Rec = {
         if (dur >= REC_MIN_MS && blob.size) {
           const rec = { blob, mime: this.mime, duration: dur, at: Date.now(), tv: textVersion(key) };
           const k = this.asDraft ? key + '|draft' : key;
+          if (!this.asDraft && pid !== PARENT_ID && S.recs[key]) await toTrash(pid, key, S.recs[key]);
           if (await safe(() => S.store.putRec(pid, k, rec))) {
             if (S.profile && S.profile.id === pid) S.recs[k] = rec;
             if (!this.asDraft) { await safe(() => S.store.delRec(pid, key + '|draft')); delete S.recs[key + '|draft']; }
@@ -744,6 +759,40 @@ function recUrl(rec) {
   if (!rec.blob && rec.data) return 'data:' + rec.mime + ';base64,' + rec.data;
   if (!objUrls.has(rec.blob)) objUrls.set(rec.blob, URL.createObjectURL(rec.blob));
   return objUrls.get(rec.blob);
+}
+
+/* المحذوف المؤقت: آخر تسجيل حُذف أو استُبدل لكل نص، يسترجعه الوالدان خلال ثلاثين يومًا */
+async function toTrash(pid, key, rec) {
+  if (!rec || !rec.blob) return;
+  const t = Object.assign({}, rec, { deletedAt: Date.now() });
+  if (await safe(() => S.store.putRec(pid, key + '|trash', t))) { if (S.profile && S.profile.id === pid) S.recs[key + '|trash'] = t; }
+}
+async function purgeTrash() {
+  const limit = Date.now() - TRASH_DAYS * 86400000;
+  for (const p of S.profiles) {
+    const all = await S.store.getRecs(p.id).catch(() => ({}));
+    for (const k of Object.keys(all)) if (k.endsWith('|trash') && (all[k].deletedAt || 0) < limit) await S.store.delRec(p.id, k).catch(() => {});
+  }
+}
+async function showTrash(p) {
+  const all = await S.store.getRecs(p.id).catch(() => ({}));
+  const keys = Object.keys(all).filter(k => k.endsWith('|trash')).sort((a, b) => all[b].deletedAt - all[a].deletedAt);
+  const list = h('div', { class: 'tlist' });
+  for (const tk of keys) {
+    const key = tk.slice(0, -6), r = all[tk];
+    list.append(h('div', { class: 'trow', 'data-trash': key },
+      h('p', { class: 'strong small', plain: T(recLabel(key)) + ' (' + fmtDur(r.duration) + ')' }),
+      h('p', { class: 'small muted', plain: T(UI.deletedAt.replace('{d}', fmtDate(r.deletedAt))) }),
+      player(r),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-trash-restore': key, onclick: async () => {
+        const cur = (await S.store.getRecs(p.id).catch(() => ({})))[key];
+        const back = Object.assign({}, r); delete back.deletedAt;
+        if (cur) await safe(() => S.store.putRec(p.id, tk, Object.assign({}, cur, { deletedAt: Date.now() })));
+        else await safe(() => S.store.delRec(p.id, tk));
+        if (await safe(() => S.store.putRec(p.id, key, back))) { toast(UI.restoredOne, 'ok'); if (S.closeModal) S.closeModal(); renderAll(); }
+      } }, UI.restoreOne)));
+  }
+  modal(UI.trashTitle, h('p', { class: 'muted small' }, UI.trashIntro), list);
 }
 
 /* واجهة التسجيل لمفتاح معيّن (صفحة قصة p1… أو بطاقة قيمة v1…) */
@@ -787,6 +836,7 @@ function fillRecBox(box, key, optional, compact) {
       player(draft),
       S.readonly ? null : h('div', { class: 'row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
+          if (S.recs[key] && !S.narrator) await toTrash(S.profile.id, key, S.recs[key]);
           if (await safe(() => S.store.putRec(S.profile.id, key, draft))) {
             await safe(() => S.store.delRec(S.profile.id, key + '|draft'));
             S.recs[key] = draft; delete S.recs[key + '|draft']; refreshRecUI();
@@ -808,6 +858,7 @@ function fillRecBox(box, key, optional, compact) {
       player(rec),
       S.readonly ? null : h('button', { class: 'btn btn-small btn-ghost', type: 'button', onclick: async () => {
         if (!confirm(T(u('deleteRecConfirm')))) return;
+        if (!S.narrator) await toTrash(S.profile.id, key, rec);
         if (await safe(() => S.store.delRec(S.profile.id, key))) { delete S.recs[key]; refreshRecUI(); }
       } }, UI.deleteRec)));
   }
@@ -1053,6 +1104,8 @@ function renderAll() {
   v.textContent = '';
   if (S.readonly) v.append(h('div', { class: 'banner' }, UI.readonlyBanner));
   if (!S.storageOk) v.append(h('div', { class: 'banner warn' }, UI.noStorage));
+  if (S.updateReady) v.append(h('div', { class: 'banner narr', 'data-update': '' }, h('span', null, UI.updateReady),
+    h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { Player.stop(); await Rec.stop(true); location.reload(); } }, UI.updateNow)));
   if (!S.profile) { v.append(S.teacher ? viewTeacher() : S.parentMode ? viewParent() : viewProfiles()); restoreFocus(fk); return; }
   if (S.narrator) v.append(narratorStrip());
   const sc = SCREENS[S.page];
@@ -1090,7 +1143,7 @@ async function toProfiles() {
 async function loadParentRecs() {
   const all = await S.store.getRecs(PARENT_ID).catch(() => ({}));
   const out = {};
-  for (const k of Object.keys(all)) if (!k.endsWith('|draft')) out[k] = all[k];
+  for (const k of Object.keys(all)) if (!isAux(k)) out[k] = all[k];
   return out;
 }
 function newSession() { return { quiz: null, timeline: null, mapSel: 'makkah', flipped: {}, marketN: 10, jars: null, echo: {} }; }
@@ -1419,6 +1472,7 @@ function viewParent() {
       h('div', { class: 'profile-tools' },
         h('button', { class: 'btn btn-small btn-ghost', type: 'button', onclick: () => exportDialog(p) }, UI.exportBtn),
         h('button', { class: 'btn btn-small btn-ghost', type: 'button', onclick: () => deleteChildRecs(p) }, UI.deleteChildRecs[gi2]),
+        trashBtn(p),
         h('button', { class: 'btn btn-small btn-danger', type: 'button', onclick: () => deleteProfile(p) }, UI.deleteProfile))));
   }
   kids.append(addChildForm(async () => { renderAll(); }));
@@ -1457,6 +1511,14 @@ function viewParent() {
     h('button', { class: 'btn btn-ghost', type: 'button', onclick: exitParent }, UI.exitParent)));
   sec.append(h('p', { class: 'muted small version', plain: T(UI.version.replace('{v}', arNum(APP_VERSION))) }));
   return sec;
+}
+function trashBtn(p) {
+  const b = h('button', { class: 'btn btn-small btn-ghost', type: 'button', hidden: true, 'data-trash-btn': p.id, onclick: () => showTrash(p) });
+  S.store.getRecs(p.id).then(all => {
+    const n = Object.keys(all).filter(k => k.endsWith('|trash')).length;
+    if (n) { b.textContent = T(UI.trashBtn.replace('{n}', arNum(n))); b.hidden = false; }
+  }).catch(() => {});
+  return b;
 }
 async function deleteProfile(p) {
   const msg = UI.deleteProfileConfirm[p.gender === 'f' ? 1 : 0].split('{name}').join(p.name);
@@ -1505,7 +1567,7 @@ function viewTeacher() {
   Promise.all([S.store.getRecs(kid.id).catch(() => ({})), S.store.getMeta('notes').catch(() => null)]).then(([recs, allNotes]) => {
     const notes = (allNotes && allNotes[kid.id]) || {};
     const order = k => { const m = /^p(\d+)(?:\.s(\d+))?$/.exec(k); return k === 'cover' ? -1 : m ? (+m[1]) * 100 + (m[2] ? +m[2] + 1 : 0) : 10000; };
-    const keys = Object.keys(recs).filter(k => !k.endsWith('|draft')).sort((a, b) => order(a) - order(b));
+    const keys = Object.keys(recs).filter(k => !isAux(k)).sort((a, b) => order(a) - order(b));
     if (!keys.length) { list.append(h('p', { class: 'muted' }, UI.noRecsYet)); return; }
     for (const k of keys) {
       const rec = recs[k], n = notes[k] || {};
@@ -1984,7 +2046,7 @@ function blobToB64(blob) {
 async function recToB64(r) { return { mime: r.mime, duration: r.duration, at: r.at || 0, tv: r.tv || '', data: await blobToB64(r.blob) }; }
 async function recsToB64(all) {
   const out = {};
-  for (const k of Object.keys(all)) { if (!k.endsWith('|draft')) out[k] = await recToB64(all[k]); }
+  for (const k of Object.keys(all)) { if (!isAux(k)) out[k] = await recToB64(all[k]); }
   return out;
 }
 /* في النسخة المصدَّرة يبقى الصوت نصًّا مشفّرًا ويُشغَّل مباشرة، فلا يُفكّ كله عند الفتح */
@@ -2089,7 +2151,7 @@ async function doBackup(kind) {
     for (const pid of (voice ? [] : profiles.map(p => p.id)).concat(PARENT_ID)) {
       const recs = await S.store.getRecs(pid);
       for (const k of Object.keys(recs)) {
-        if (k.endsWith('|draft')) continue;
+        if (isAux(k)) continue;
         await w.write(JSON.stringify(Object.assign({ pid, key: k }, await recToB64(recs[k]))) + '\n');
       }
     }
@@ -2153,7 +2215,7 @@ function cleanRec(r) {
   if (!(dur > 0 && dur <= REC_MAX_MS * 1.5)) return null;
   return { blob: b64ToBlob(r.data, r.mime), mime: r.mime, duration: dur, at: +r.at || Date.now(), tv: typeof r.tv === 'string' ? r.tv.slice(0, 16) : '' };
 }
-const okKey = k => typeof k === 'string' && k.length > 0 && k.length <= 120 && !/[\u0000-\u001f]/.test(k) && !k.endsWith('|draft');
+const okKey = k => typeof k === 'string' && k.length > 0 && k.length <= 120 && !/[\u0000-\u001f]/.test(k) && !isAux(k);
 async function restoreBackup(file) {
   const it = readLines(file);
   let head;
@@ -2246,6 +2308,7 @@ async function boot() {
   S.hasTeacher = !S.readonly && !!(await S.store.getMeta('tpin').catch(() => null));
   if (S.readonly && S.profiles[0]) await openProfile(S.profiles[0]); else renderAll();
   cleanTmp();
+  if (!S.readonly) purgeTrash();
   /* خطأ غير متوقع: رسالة واحدة بدل صمت الصفحة */
   let lastErr = 0;
   const onErr = () => { if (Date.now() - lastErr > 8000) { lastErr = Date.now(); toast(UI.unexpected, 'error'); } };
@@ -2278,6 +2341,11 @@ function registerSW() {
   if (NATIVE || S.readonly || !('serviceWorker' in navigator) || !document.querySelector('link[rel="manifest"]')) return;
   const okOrigin = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (!okOrigin) return;
-  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => { /* الكتاب يعمل بدونه */ });
+  const had = !!navigator.serviceWorker.controller;
+  /* عامل جديد تولّى الصفحة: الكتاب الجديد جاهز، فيُعرض زر تحديث ولا يُعاد التحميل فجأة */
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !S.updateReady) { S.updateReady = true; renderAll(); } });
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => { /* الكتاب يعمل بدونه */ });
 }
 boot();
